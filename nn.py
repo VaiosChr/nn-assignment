@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
-from tensorflow.keras.utils import to_categorical
+from keras import datasets, layers, models
+from keras.utils import to_categorical
 import pickle
 import matplotlib.pyplot as plt
 
