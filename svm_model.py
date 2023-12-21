@@ -1,7 +1,8 @@
 from sklearn import svm
-from sklearn.model_selection import train_test_split
 from keras.datasets import cifar10
 import numpy as np
+import time
+from sklearn.model_selection import GridSearchCV
 
 # load the cifar-10 dataset
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -19,13 +20,34 @@ y_test = y_test[test_picks]
 x_train = x_train.reshape(x_train.shape[0], -1)
 x_test = x_test.reshape(x_test.shape[0], -1)
 
-# create a SVM classifier
-clf = svm.SVC()
+param_grid = {
+    'C': [0.1, 1, 10, 100],
+    'gamma': ['scale', 'auto', 0.1, 1, 10],
+    'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+    'degree': [2, 3, 4],
+    'coef0': [0.0, 0.1, 0.5]
+}
+
+# create a grid search object
+grid = GridSearchCV(svm.SVC(), param_grid, cv=5, verbose=2, n_jobs=-1)
+
+start_time = time.time()
 
 # train the classifier
-clf.fit(x_train, y_train)
+grid.fit(x_train, y_train.ravel())
+
+duration_time = time.time() - start_time
+
+# get the best parameters
+best_params = grid.best_params_
 
 # test the classifier
-score = clf.score(x_test, y_test)
+train_score = grid.score(x_train, y_train.ravel())
+test_score = grid.score(x_test, y_test.ravel())
 
-print("Accuracy:", score)
+# print the results
+print(f"Best parameters: {best_params}")
+print(f"Training duration: {duration_time} seconds")
+print(f"Training accuracy: {train_score}")
+print(f"Testing accuracy: {test_score}\n")
+
