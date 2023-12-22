@@ -1,7 +1,13 @@
 from sklearn import svm
-from sklearn.model_selection import train_test_split
 from keras.datasets import cifar10
 import numpy as np
+import time
+from sklearn.model_selection import GridSearchCV
+import neptune
+
+# neptune parameters
+NEPTUNE_API_TOKEN = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJlMDQwYzVmYy01NTU5LTQ2NmMtOTQ3Ny00OTc5NWUyZjA1NmQifQ=="
+NEPTUNE_PROJECT = "vaioschr/NNDL-assignment-2"
 
 # load the cifar-10 dataset
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -19,13 +25,35 @@ y_test = y_test[test_picks]
 x_train = x_train.reshape(x_train.shape[0], -1)
 x_test = x_test.reshape(x_test.shape[0], -1)
 
-# create a SVM classifier
-clf = svm.SVC()
+param_grid = {
+    'C': [0.1, 1.0, 10.0, 100.0],
+    'gamma': ['scale', 'auto', 0.1, 1, 10],
+    'kernel': ['poly', 'sigmoid'],
+    'degree': [2, 3, 4],
+    'coef0': [0.0, 0.1, 0.5]
+}
 
-# train the classifier
-clf.fit(x_train, y_train)
+for k in param_grid['kernel']:
+    for c in param_grid['coef0']:
+        model = svm.SVC(coef0 = c, kernel = k)
+        run = neptune.init_run(project=NEPTUNE_PROJECT, api_token=NEPTUNE_API_TOKEN)
 
-# test the classifier
-score = clf.score(x_test, y_test)
+        start_time = time.time()
 
-print("Accuracy:", score)
+        # train the classifier
+        model.fit(x_train, y_train.ravel())
+
+        duration_time = time.time() - start_time
+
+        # test the classifier
+        train_score = model.score(x_train, y_train.ravel())
+        test_score = model.score(x_test, y_test.ravel())
+
+        # print the results
+        run['Training duration'] = duration_time
+        run['Training accuracy'] = train_score
+        run['Testing accuracy'] = test_score
+        run['kernel'] = k
+        run['coef0'] = c
+
+        run.stop()
