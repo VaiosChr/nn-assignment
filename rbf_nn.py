@@ -5,8 +5,6 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 from keras.utils import to_categorical
 from keras.datasets import cifar10
-import time
-import neptune
 
 # Load CIFAR-10 data
 (train_images, train_labels), (test_images, test_labels) = cifar10.load_data()
@@ -30,9 +28,9 @@ test_labels = to_categorical(test_labels)
 train_images = train_images.reshape(train_images.shape[0], -1)
 test_images = test_images.reshape(test_images.shape[0], -1)
 
-# Create grid-based centers
-NUM_CENTERS = 100
-kmeans = KMeans(n_clusters=NUM_CENTERS, random_state=42).fit(train_images)
+# Use K-Means to find RBF centers
+num_centers = 100  # You can adjust this parameter
+kmeans = KMeans(n_clusters=num_centers, random_state=42).fit(train_images)
 centers = kmeans.cluster_centers_
 
 # Define a custom layer to compute RBF distances
@@ -55,11 +53,8 @@ model.add(layers.Dense(2, activation='softmax'))  # Output layer with 2 classes
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Train the model
-history = model.fit(train_images, train_labels, epochs=60, batch_size=64, validation_data=(test_images, test_labels))
+history = model.fit(train_images, train_labels, epochs=10, batch_size=64, validation_data=(test_images, test_labels))
 
 # Evaluate the model on the test set
 accuracy = model.evaluate(test_images, test_labels)[1]
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
-
-# Save the trained model
-model.save('rbf_model')
